@@ -102,8 +102,10 @@ class CliTests(unittest.TestCase):
         tmp = Path(tempfile.mkdtemp())
         f = tmp / "Dockerfile"
         f.write_text("FROM x:1.2\nUSER a\nCMD x\n", encoding="utf-8")
-        self.assertEqual(self.run_cli(["--strict", str(f)])[0], 1)
-        self.assertEqual(self.run_cli(["--strict", "--ignore", "DL010", str(f)])[0], 0)
+        _, out = self.run_cli(["--json", str(f)])
+        self.assertIn("DL010", out)
+        _, out = self.run_cli(["--json", "--ignore", "DL010", str(f)])
+        self.assertNotIn("DL010", out)
 
     def test_json(self):
         tmp = Path(tempfile.mkdtemp())
