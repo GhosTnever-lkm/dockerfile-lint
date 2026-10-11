@@ -1,4 +1,4 @@
-"""dockerfile-lint [FILE ...] [--strict] [--json]"""
+"""dockerfile-lint [FILE ...] [--strict] [--ignore CODE] [--json]"""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="dockerfile-lint", description="Offline Dockerfile hygiene and security checks.")
     p.add_argument("files", nargs="*", default=["Dockerfile"])
     p.add_argument("--strict", action="store_true", help="warnings fail the run")
+    p.add_argument("--ignore", action="append", default=[], metavar="CODE", help="skip a rule code, e.g. DL010 (repeatable)")
     p.add_argument("--json", action="store_true")
     p.add_argument("--version", action="version", version=__version__)
     args = p.parse_args(argv)
@@ -26,7 +27,8 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as exc:
             print(f"dockerfile-lint: {exc.strerror}: {file}", file=sys.stderr)
             return 2
-        findings = lint(text)
+        ignored = {c.strip().upper() for c in args.ignore}
+        findings = [f for f in lint(text) if f.code not in ignored]
         results[file] = findings
         if any(f.level == "error" for f in findings) or (args.strict and any(f.level == "warning" for f in findings)):
             failed = True

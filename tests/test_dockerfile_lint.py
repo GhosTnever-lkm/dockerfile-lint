@@ -98,6 +98,13 @@ class CliTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(self.run_cli(["/no/Dockerfile"])[0], 2)
 
+    def test_ignore_rule(self):
+        tmp = Path(tempfile.mkdtemp())
+        f = tmp / "Dockerfile"
+        f.write_text("FROM x:1.2\nUSER a\nCMD x\n", encoding="utf-8")
+        self.assertEqual(self.run_cli(["--strict", str(f)])[0], 1)
+        self.assertEqual(self.run_cli(["--strict", "--ignore", "DL010", str(f)])[0], 0)
+
     def test_json(self):
         tmp = Path(tempfile.mkdtemp())
         f = tmp / "Dockerfile"

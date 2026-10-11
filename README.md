@@ -8,6 +8,7 @@
 python -m dockerfile_lint                       # ./Dockerfile
 python -m dockerfile_lint services/*/Dockerfile --strict
 python -m dockerfile_lint Dockerfile --json
+python -m dockerfile_lint Dockerfile --ignore DL010   # пропустить правило
 ```
 
 Пример вывода для [examples/bad.Dockerfile](examples/bad.Dockerfile):
