@@ -51,3 +51,18 @@ python -m unittest discover -s tests -t .
 ## Лицензия
 
 MIT — см. [LICENSE](LICENSE).
+
+## История изменений и безопасность
+
+См. [CHANGELOG.md](CHANGELOG.md) и [SECURITY.md](SECURITY.md).
+
+## Использование в CI
+
+```yaml
+- uses: actions/checkout@v4
+- uses: actions/setup-python@v5
+  with:
+    python-version: "3.12"
+- name: dockerfile-lint
+  run: python -m dockerfile_lint Dockerfile --strict
+```
