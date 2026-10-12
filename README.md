@@ -1,11 +1,22 @@
 # dockerfile-lint
 
+[![CI](https://github.com/GhosTnever-lkm/dockerfile-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/GhosTnever-lkm/dockerfile-lint/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/GhosTnever-lkm/dockerfile-lint)](https://github.com/GhosTnever-lkm/dockerfile-lint/releases/latest)
+
 Офлайн-линтер Dockerfile: ловит небезопасные и неаккуратные решения до сборки образа — плавающие теги `:latest`, запуск от root, `curl … | sh`, секреты в `ENV`/`ARG`, лишние слои `apt-get`. Не запускает Docker и не ходит в сеть. Без зависимостей, Python 3.10+.
 
 ## Быстрый старт
 
+Скачайте wheel из [последнего релиза](https://github.com/GhosTnever-lkm/dockerfile-lint/releases/latest) и установите:
+
 ```bash
-python -m dockerfile_lint                       # ./Dockerfile
+python -m pip install dockerfile_lint-0.1.2-py3-none-any.whl
+```
+
+Затем запускайте:
+
+```bash
+dockerfile-lint                                 # ./Dockerfile
 python -m dockerfile_lint services/*/Dockerfile --strict
 python -m dockerfile_lint Dockerfile --json
 python -m dockerfile_lint Dockerfile --ignore DL010   # пропустить правило
@@ -24,7 +35,7 @@ examples/bad.Dockerfile:4: [ERROR] DL007 RUN pipes a remote download into a shel
 | Код | Уровень | Смысл |
 | --- | --- | --- |
 | `DL000` | error | в файле нет `FROM` |
-| `DL001` | warning | базовый образ без тега или с `:latest` (digest `@sha256:` считается закреплённым) |
+| `DL001` | warning | базовый образ без тега, с `:latest` или некорректным digest (валидный `@sha256:` считается закреплённым) |
 | `DL002` | warning | финальный этап не содержит `USER` — контейнер работает от root |
 | `DL003` | warning | `ADD` для локальных файлов; нужен `COPY` (архивы и URL допустимы) |
 | `DL004` | info | `apt-get install` без `--no-install-recommends` |
@@ -49,6 +60,10 @@ examples/bad.Dockerfile:4: [ERROR] DL007 RUN pipes a remote download into a shel
 python -m unittest discover -s tests -t .
 ```
 
+## Поддержка и Pro-версия
+
+Базовая версия остаётся бесплатной; отдельный Pro-выпуск пока не опубликован. Нужны дополнительные Dockerfile-правила или CI-интеграция? [Опишите сценарий в запросе](https://github.com/GhosTnever-lkm/dockerfile-lint/issues/new).
+
 ## Лицензия
 
 MIT — см. [LICENSE](LICENSE).
@@ -60,8 +75,8 @@ MIT — см. [LICENSE](LICENSE).
 ## Использование в CI
 
 ```yaml
-- uses: actions/checkout@v4
-- uses: actions/setup-python@v5
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+- uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
   with:
     python-version: "3.12"
 - name: dockerfile-lint

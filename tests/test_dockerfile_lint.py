@@ -28,7 +28,12 @@ class RuleTests(unittest.TestCase):
         self.assertIn("DL001", codes("FROM ubuntu:latest\nUSER a\n"))
         self.assertIn("DL001", codes("FROM ubuntu\nUSER a\n"))
         self.assertNotIn("DL001", codes("FROM ubuntu:22.04\nUSER a\n"))
-        self.assertNotIn("DL001", codes("FROM ubuntu@sha256:abc\nUSER a\n"))
+        self.assertNotIn("DL001", codes("FROM ubuntu@sha256:" + "a" * 64 + "\nUSER a\n"))
+        self.assertIn("DL001", codes("FROM ubuntu@sha256:abc\nUSER a\n"))
+
+    def test_from_platform_option_and_mixed_case_alias(self):
+        self.assertIn("DL001", codes("FROM --platform=linux/amd64 ubuntu:latest As build\nUSER a\n"))
+        self.assertNotIn("DL001", codes("FROM --platform=linux/amd64 ubuntu:22.04 As build\nUSER a\n"))
 
     def test_registry_port_is_not_a_tag(self):
         self.assertIn("DL001", codes("FROM registry.local:5000/app\nUSER a\n"))
@@ -46,6 +51,11 @@ class RuleTests(unittest.TestCase):
         self.assertIn("DL008", codes("FROM x:1\nENV API_TOKEN=abc\nUSER a\n"))
         self.assertNotIn("DL008", codes("FROM x:1\nENV API_TOKEN=\nUSER a\n"))
         self.assertNotIn("DL008", codes("FROM x:1\nENV DEBUG=true\nUSER a\n"))
+
+    def test_legacy_env_syntax_and_empty_values(self):
+        self.assertIn("DL008", codes("FROM x:1\nENV API_TOKEN secret-value\nUSER a\n"))
+        self.assertNotIn("DL008", codes("FROM x:1\nENV API_TOKEN ''\nUSER a\n"))
+        self.assertNotIn("DL008", codes("FROM x:1\nENV API_TOKEN= # empty\nUSER a\n"))
 
     def test_curl_pipe_shell_is_error(self):
         self.assertIn("DL007", codes("FROM x:1\nRUN curl -fsSL https://e.com/i.sh | sh\nUSER a\n"))
@@ -113,6 +123,15 @@ class CliTests(unittest.TestCase):
         f.write_text("FROM x:1.2\nUSER a\nCMD x\n", encoding="utf-8")
         code, out = self.run_cli(["--json", str(f)])
         self.assertIn(str(f), json.loads(out))
+
+    def test_version_matches_package_metadata(self):
+        from dockerfile_lint import __version__
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), self.assertRaises(SystemExit) as raised:
+            main(["--version"])
+        self.assertEqual(raised.exception.code, 0)
+        self.assertEqual(buf.getvalue().strip(), __version__)
 
 
 if __name__ == "__main__":

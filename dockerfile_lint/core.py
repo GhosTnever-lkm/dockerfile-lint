@@ -60,10 +60,15 @@ def lint(text: str) -> list[Finding]:
         return findings
 
     for i in stages:
-        image = i.args.split(" AS ")[0].split(" as ")[0].strip()
+        image = _from_image(i.args)
+        if not image:
+            continue
         if image.lower() == "scratch":
             continue
         if "@" in image:
+            if re.search(r"@sha256:[0-9a-f]{64}$", image, re.IGNORECASE):
+                continue
+            add("warning", "DL001", i.line, f"base image {image!r} does not use a valid pinned sha256 digest")
             continue
         name, tag = (image.rsplit(":", 1) if ":" in image.rsplit("/", 1)[-1] else (image, ""))
         if tag in ("", "latest"):
@@ -79,8 +84,11 @@ def lint(text: str) -> list[Finding]:
             if sources and not all(ADD_REMOTE_OR_ARCHIVE_RE.match(s) for s in sources):
                 add("warning", "DL003", i.line, "ADD copies local files; use COPY unless auto-extraction is needed")
         if i.keyword in ("ENV", "ARG"):
-            for key in _assigned_keys(i.args):
-                if SECRET_KEY_RE.search(key) and "=" in i.args and not i.args.endswith(("=", '=""', "=''")):
+            for key, value in _environment_pairs(i.args, i.keyword):
+                value = re.split(r"\s+#", value, maxsplit=1)[0].strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                    value = value[1:-1]
+                if SECRET_KEY_RE.search(key) and value:
                     add("error", "DL008", i.line, f"{i.keyword} {key} looks like a secret stored in the image")
         if i.keyword == "RUN":
             if CURL_PIPE_SHELL_RE.search(i.args):
@@ -104,14 +112,29 @@ def lint(text: str) -> list[Finding]:
     return findings
 
 
-def _assigned_keys(args: str) -> list[str]:
-    keys = []
-    for token in args.split():
-        if "=" in token:
-            keys.append(token.split("=", 1)[0])
-        elif token and not keys:
-            keys.append(token)
-    return keys
+def _from_image(args: str) -> str:
+    tokens = args.split()
+    index = 0
+    while index < len(tokens) and tokens[index].startswith("--"):
+        option = tokens[index]
+        index += 1
+        if "=" not in option and index < len(tokens) and not tokens[index].startswith("--"):
+            index += 1
+    return tokens[index] if index < len(tokens) else ""
+
+
+def _environment_pairs(args: str, keyword: str) -> list[tuple[str, str]]:
+    tokens = args.split()
+    if not tokens:
+        return []
+    if keyword == "ENV" and "=" not in tokens[0]:
+        return [(tokens[0], " ".join(tokens[1:]))] if len(tokens) > 1 else []
+    pairs = []
+    for token in tokens:
+        key, separator, value = token.partition("=")
+        if separator:
+            pairs.append((key, value))
+    return pairs
 
 
 def lint_file(path: str | Path) -> list[Finding]:
