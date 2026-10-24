@@ -30,6 +30,13 @@ def parse(text: str) -> list[Instruction]:
     instructions: list[Instruction] = []
     buffer = ""
     start = 0
+
+    def instruction_from_buffer() -> Instruction:
+        parts = buffer.strip().split(maxsplit=1)
+        keyword = parts[0].upper()
+        args = parts[1].strip() if len(parts) > 1 else ""
+        return Instruction(start, keyword, args)
+
     for number, raw in enumerate(text.splitlines(), start=1):
         stripped = raw.strip()
         if not buffer and (not stripped or stripped.startswith("#")):
@@ -40,12 +47,10 @@ def parse(text: str) -> list[Instruction]:
             buffer += stripped[:-1].rstrip() + " "
             continue
         buffer += stripped
-        keyword, _, args = buffer.strip().partition(" ")
-        instructions.append(Instruction(start, keyword.upper(), args.strip()))
+        instructions.append(instruction_from_buffer())
         buffer = ""
     if buffer.strip():
-        keyword, _, args = buffer.strip().partition(" ")
-        instructions.append(Instruction(start, keyword.upper(), args.strip()))
+        instructions.append(instruction_from_buffer())
     return instructions
 
 

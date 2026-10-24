@@ -14,6 +14,15 @@ def codes(text):
 
 
 class ParseTests(unittest.TestCase):
+    def test_tabs_separate_instruction_keyword_and_arguments(self):
+        text = "FROM\tubuntu:22.04\nUSER\tapp\nHEALTHCHECK\tCMD true\n"
+        ins = parse(text)
+        self.assertEqual(
+            [(i.keyword, i.args) for i in ins],
+            [("FROM", "ubuntu:22.04"), ("USER", "app"), ("HEALTHCHECK", "CMD true")],
+        )
+        self.assertNotIn("DL000", codes(text))
+
     def test_continuations_join_into_one_instruction(self):
         ins = parse("RUN a \\\n  && b\nCMD x\n")
         self.assertEqual([i.keyword for i in ins], ["RUN", "CMD"])
