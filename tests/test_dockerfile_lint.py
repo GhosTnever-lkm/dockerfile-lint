@@ -45,7 +45,15 @@ class RuleTests(unittest.TestCase):
     def test_add_local_vs_remote(self):
         self.assertIn("DL003", codes("FROM x:1\nADD app.py /app/\nUSER a\n"))
         self.assertNotIn("DL003", codes("FROM x:1\nADD app.tar.gz /opt/\nUSER a\n"))
+        self.assertNotIn("DL003", codes("FROM x:1\nADD app.tar.zst /opt/\nUSER a\n"))
+        self.assertIn("DL003", codes("FROM x:1\nADD app.zip /opt/\nUSER a\n"))
         self.assertNotIn("DL003", codes("FROM x:1\nADD https://example.com/f /tmp/\nUSER a\n"))
+
+    def test_add_skips_all_option_tokens_before_sources(self):
+        for options in ("--chown=1000:1000 --chmod=755", "--chown 1000:1000 --chmod 755"):
+            with self.subTest(options=options):
+                text = f"FROM x:1\nADD {options} app.tar.gz /opt/\nUSER a\n"
+                self.assertNotIn("DL003", codes(text))
 
     def test_secret_env_is_error_but_empty_is_not(self):
         self.assertIn("DL008", codes("FROM x:1\nENV API_TOKEN=abc\nUSER a\n"))
