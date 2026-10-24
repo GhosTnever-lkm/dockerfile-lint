@@ -8,7 +8,7 @@ from pathlib import Path
 
 SECRET_KEY_RE = re.compile(r"(PASSWORD|PASSWD|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY)", re.IGNORECASE)
 CURL_PIPE_SHELL_RE = re.compile(r"(curl|wget)\b[^|;&]*\|\s*(sudo\s+)?(sh|bash|zsh)\b")
-ADD_REMOTE_OR_ARCHIVE_RE = re.compile(r"^(https?://|git@|.*\.(tar|tar\.gz|tgz|tar\.xz|tar\.bz2|zip)$)", re.IGNORECASE)
+ADD_REMOTE_OR_ARCHIVE_RE = re.compile(r"^(https?://|git@|.*\.(tar|tar\.gz|tgz|tar\.xz|tar\.bz2|tar\.zst)$)", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -80,7 +80,7 @@ def lint(text: str) -> list[Finding]:
 
     for i in ins:
         if i.keyword == "ADD":
-            sources = i.args.split()[:-1] if "--" not in i.args[:2] else i.args.split()[1:-1]
+            sources = _add_sources(i.args)
             if sources and not all(ADD_REMOTE_OR_ARCHIVE_RE.match(s) for s in sources):
                 add("warning", "DL003", i.line, "ADD copies local files; use COPY unless auto-extraction is needed")
         if i.keyword in ("ENV", "ARG"):
@@ -121,6 +121,19 @@ def _from_image(args: str) -> str:
         if "=" not in option and index < len(tokens) and not tokens[index].startswith("--"):
             index += 1
     return tokens[index] if index < len(tokens) else ""
+
+
+def _add_sources(args: str) -> list[str]:
+    """Return ADD sources after skipping instruction options and their values."""
+    tokens = args.split()
+    index = 0
+    value_options = {"--chown", "--chmod", "--checksum", "--exclude"}
+    while index < len(tokens) and tokens[index].startswith("--"):
+        option, separator, _ = tokens[index].partition("=")
+        index += 1
+        if not separator and option in value_options and index < len(tokens):
+            index += 1
+    return tokens[index:-1] if index < len(tokens) else []
 
 
 def _environment_pairs(args: str, keyword: str) -> list[tuple[str, str]]:

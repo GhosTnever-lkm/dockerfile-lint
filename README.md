@@ -10,7 +10,7 @@
 Скачайте wheel из [последнего релиза](https://github.com/GhosTnever-lkm/dockerfile-lint/releases/latest) и установите:
 
 ```bash
-python -m pip install dockerfile_lint-0.1.2-py3-none-any.whl
+python -m pip install dockerfile_lint-0.1.3-py3-none-any.whl
 ```
 
 Затем запускайте:
@@ -37,7 +37,7 @@ examples/bad.Dockerfile:4: [ERROR] DL007 RUN pipes a remote download into a shel
 | `DL000` | error | в файле нет `FROM` |
 | `DL001` | warning | базовый образ без тега, с `:latest` или некорректным digest (валидный `@sha256:` считается закреплённым) |
 | `DL002` | warning | финальный этап не содержит `USER` — контейнер работает от root |
-| `DL003` | warning | `ADD` для локальных файлов; нужен `COPY` (архивы и URL допустимы) |
+| `DL003` | warning | `ADD` для локальных файлов; нужен `COPY` (URL и распознаваемые локальные tar-архивы допустимы; ZIP не распаковывается) |
 | `DL004` | info | `apt-get install` без `--no-install-recommends` |
 | `DL005` | warning | `apt-get install` без очистки `/var/lib/apt/lists` в том же слое |
 | `DL006` | info | `pip install` без `--no-cache-dir` |
