@@ -10,7 +10,7 @@
 Скачайте wheel из [последнего релиза](https://github.com/GhosTnever-lkm/dockerfile-lint/releases/latest) и установите:
 
 ```bash
-python -m pip install dockerfile_lint-0.1.3-py3-none-any.whl
+python -m pip install dockerfile_lint-0.1.4-py3-none-any.whl
 ```
 
 Затем запускайте:
